@@ -1,18 +1,19 @@
 "use client";
 
 import { useAdmin } from "@/hooks/use-admin";
-import { createElection, addCandidate, startVoting, startTally, completeElection } from "@/lib/stacks-write";
+import { createElection, addCandidate, startVotingPhase, startTallyPhase, completeElection } from "@/lib/stacks-write";
 import { useState } from "react";
 import PageShell from "@/components/PageShell";
 import PhaseBadge from "@/components/PhaseBadge";
 import TransactionStatus from "@/components/TransactionStatus";
-import { PlusCircle, UserPlus, RefreshCw, Layers, ShieldCheck, ChevronRight } from "lucide-react";
+import { PlusCircle, UserPlus, RefreshCw, Layers, ShieldCheck, ChevronRight, CheckCircle2 } from "lucide-react";
 
 /**
  * Admin Dashboard for the electoral authority.
  */
 export default function AdminPage() {
-  const { elections, loading, refresh } = useAdmin();
+  const { adminElection, loading, refresh } = useAdmin();
+  const elections = adminElection ? [adminElection] : [];
   
   // Transaction states
   const [txStatus, setTxStatus] = useState<"idle" | "pending" | "success" | "error">("idle");
@@ -50,8 +51,9 @@ export default function AdminPage() {
 
     addCandidate({
       electionId: activeElectionId,
-      name: formData.get("candName") as string,
-      description: formData.get("candDesc") as string,
+      candidateName: formData.get("candName") as string,
+      candidateDescription: formData.get("candDesc") as string,
+      candidateKey: new Uint8Array(33), // Placeholder for protocol-required key
       onFinish: (id) => {
         setTxId(id);
         setTxStatus("success");
@@ -134,17 +136,17 @@ export default function AdminPage() {
                             
                             <div className="flex items-center gap-3">
                                {election.phase === 0 && (
-                                  <button onClick={(e) => { e.stopPropagation(); startVoting({electionId: election.id, onFinish: refresh}); }} className="p-2 border border-border hover:border-accent group/btn transition-colors">
+                                   <button onClick={(e) => { e.stopPropagation(); startVotingPhase({electionId: election.id, onFinish: () => refresh(), onCancel: () => {}}); }} className="p-2 border border-border hover:border-accent group/btn transition-colors">
                                      <RefreshCw size={14} className="group-hover/btn:rotate-90 transition-transform"/>
                                   </button>
                                )}
                                {election.phase === 1 && (
-                                  <button onClick={(e) => { e.stopPropagation(); startTally({electionId: election.id, onFinish: refresh}); }} className="p-2 border border-border hover:border-accent">
+                                   <button onClick={(e) => { e.stopPropagation(); startTallyPhase({electionId: election.id, onFinish: () => refresh(), onCancel: () => {}}); }} className="p-2 border border-border hover:border-accent">
                                      <ChevronRight size={14} />
                                   </button>
                                )}
                                {election.phase === 2 && (
-                                  <button onClick={(e) => { e.stopPropagation(); completeElection({electionId: election.id, onFinish: refresh}); }} className="p-2 border border-border hover:border-accent">
+                                   <button onClick={(e) => { e.stopPropagation(); completeElection({electionId: election.id, onFinish: () => refresh(), onCancel: () => {}}); }} className="p-2 border border-border hover:border-accent">
                                      <CheckCircle2 size={14} className="text-green-500" />
                                   </button>
                                )}
