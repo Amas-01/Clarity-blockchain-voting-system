@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
-import { userSession, authenticate, disconnect, getAddress } from "@/lib/stacks";
+import { userSession, authenticate, disconnect, getAddress } from "@/lib/stacks-session";
 import { User, LogOut, LayoutDashboard, Vote } from "lucide-react";
 
 export default function Header() {

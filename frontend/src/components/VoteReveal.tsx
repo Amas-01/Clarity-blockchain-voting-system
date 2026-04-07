@@ -1,16 +1,9 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { hexToUint8Array } from "@/lib/crypto-utils";
-import { 
-  CONTRACT_ADDRESS, 
-  CONTRACT_NAME, 
-  getNetwork,
-  userSession,
-  stacksBufferCV
-} from "@/lib/stacks";
-import { uintCV } from "@stacks/transactions";
-import { openContractCall } from "@stacks/connect";
+import { hexToBytes } from "@/lib/commitment";
+import { revealVote } from "@/lib/stacks-write";
+import { userSession, getAddress } from "@/lib/stacks-session";
 import { Unlock, FileKey, AlertTriangle, CheckCircle } from "lucide-react";
 
 interface VoteRevealProps {
@@ -25,7 +18,7 @@ export default function VoteReveal({ electionId, onSuccess }: VoteRevealProps) {
 
   useEffect(() => {
     if (userSession.isUserSignedIn()) {
-      const address = userSession.loadUserData().profile.stxAddress.testnet;
+      const address = getAddress(userSession.loadUserData());
       const storageKey = `vote-${address}-${electionId}`;
       const data = localStorage.getItem(storageKey);
       if (data) {
@@ -40,26 +33,17 @@ export default function VoteReveal({ electionId, onSuccess }: VoteRevealProps) {
     setError(null);
 
     try {
-      const network = getNetwork();
-      const saltBytes = hexToUint8Array(storedVote.salt);
+      const saltBytes = hexToBytes(storedVote.salt);
 
-      await openContractCall({
-        contractAddress: CONTRACT_ADDRESS,
-        contractName: CONTRACT_NAME,
-        functionName: "reveal-vote",
-        functionArgs: [
-          uintCV(electionId),
-          uintCV(storedVote.candidateId),
-          stacksBufferCV(saltBytes)
-        ],
-        network,
-        onFinish: (data) => {
-          console.log("Reveal transaction sent:", data.txId);
+      revealVote({
+        electionId,
+        candidateId: storedVote.candidateId,
+        salt: saltBytes,
+        onFinish: (txId) => {
+          console.log("Reveal transaction sent:", txId);
           onSuccess();
         },
-        onCancel: () => {
-          setIsSubmitting(false);
-        }
+        onCancel: () => setIsSubmitting(false)
       });
     } catch (err: any) {
       console.error("Reveal error:", err);

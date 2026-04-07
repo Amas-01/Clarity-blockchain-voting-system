@@ -1,58 +1,53 @@
 "use client";
 
-import Link from "next/link";
-import { Election } from "@/hooks/use-election";
-import { ChevronRight, Calendar, User, Clock } from "lucide-react";
+import PhaseBadge from "./PhaseBadge";
+import { PHASE_DESCRIPTIONS } from "@/lib/constants";
+import { phaseBadgeStyle } from "@/lib/format";
 
 interface ElectionCardProps {
-  election: Election;
+  id: number;
+  name: string;
+  description: string;
+  phase: number;
+  onClick?: () => void;
 }
 
-const PHASE_LABELS = ["Registration", "Voting", "Tallying", "Completed"];
-const PHASE_COLORS = [
-  "text-green-400 bg-green-400/10",
-  "text-amber-400 bg-amber-400/10",
-  "text-blue-400 bg-blue-400/10",
-  "text-gray-400 bg-gray-400/10",
-];
+/**
+ * Election summary card with dark civic design.
+ */
+export default function ElectionCard({ id, name, description, phase, onClick }: ElectionCardProps) {
+  // Extract border color from the badge style (the text-XXX part usually matches the border)
+  const styling = phaseBadgeStyle(phase);
+  const borderClass = styling.split(" ").find(c => c.startsWith("text-")) || "text-amber-400";
+  const bgBorderClass = borderClass.replace("text-", "bg-");
 
-export default function ElectionCard({ election }: ElectionCardProps) {
   return (
-    <Link 
-      href={`/election/${election.id}`}
-      className="group block border border-border p-6 hover:border-accent/40 transition-all hover:accent-glow bg-background/40"
+    <div
+      onClick={onClick}
+      className={`relative group border border-border bg-surface p-6 transition-all duration-500 overflow-hidden ${
+        onClick ? "cursor-pointer hover:shadow-[0_8px_32px_rgba(212,160,23,0.1)] hover:-translate-y-1" : ""
+      }`}
     >
-      <div className="flex flex-col h-full">
-        <div className="flex justify-between items-start mb-4">
-          <span className={`text-[10px] font-mono px-2 py-0.5 rounded-sm uppercase tracking-wider ${PHASE_COLORS[election.phase]}`}>
-            {PHASE_LABELS[election.phase]}
-          </span>
-          <span className="text-[10px] font-mono text-muted-foreground">ID: #{election.id}</span>
-        </div>
-
-        <h3 className="text-xl font-serif mb-2 group-hover:text-accent transition-colors">
-          {election.name}
+      {/* Phase-colored Accent Strip */}
+      <div className={`absolute left-0 top-0 bottom-0 w-1 ${bgBorderClass}`} />
+      
+      <div className="flex justify-between items-start mb-6">
+        <h3 className="font-serif text-2xl uppercase tracking-tight group-hover:text-accent transition-colors leading-none">
+          {name}
         </h3>
-        
-        <p className="text-sm text-muted-foreground line-clamp-2 mb-6 flex-1">
-          {election.description}
-        </p>
-
-        <div className="space-y-2 pt-4 border-t border-border/50">
-          <div className="flex items-center gap-2 text-xs font-mono text-muted-foreground">
-            <User size={14} className="text-accent/60" />
-            <span>Admin: {election.admin.slice(0, 6)}...{election.admin.slice(-4)}</span>
-          </div>
-          <div className="flex items-center gap-2 text-xs font-mono text-muted-foreground">
-            <Clock size={14} className="text-accent/60" />
-            <span>Ends at: {election.votingDeadline}</span>
-          </div>
-        </div>
-
-        <div className="mt-4 flex items-center gap-1 text-[10px] font-mono text-accent uppercase tracking-[0.2em] font-bold group-hover:translate-x-1 transition-transform">
-          View_Election <ChevronRight size={14} />
-        </div>
+        <PhaseBadge phase={phase} />
       </div>
-    </Link>
+
+      <p className="font-mono text-sm text-muted-foreground mb-12 line-clamp-2 leading-relaxed">
+        {description}
+      </p>
+
+      <div className="flex justify-between items-end">
+        <span className="font-mono text-[10px] text-muted-foreground uppercase opacity-60">
+          Election #0{id}
+        </span>
+        <div className="w-8 h-[1px] bg-border group-hover:w-16 group-hover:bg-accent transition-all duration-700" />
+      </div>
+    </div>
   );
 }

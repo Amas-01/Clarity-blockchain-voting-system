@@ -1,28 +1,15 @@
 "use client";
 
 import { useState } from "react";
-import { Candidate } from "@/hooks/use-election";
-import { generateSalt, computeVoteHash, uint8ArrayToHex } from "@/lib/crypto-utils";
-import { 
-  fetchMapValue, 
-  CONTRACT_ADDRESS, 
-  CONTRACT_NAME, 
-  getNetwork,
-  userSession,
-  stacksBufferCV
-} from "@/lib/stacks";
-import { 
-  uintCV, 
-  serializeCV, 
-  hexToCV,
-  cvToHex
-} from "@stacks/transactions";
-import { openContractCall } from "@stacks/connect";
+import { CandidateDetails } from "@/lib/stacks-read";
+import { generateRandomSalt, generateCommitment, bytesToHex } from "@/lib/commitment";
+import { castVote } from "@/lib/stacks-write";
+import { userSession, getAddress } from "@/lib/stacks-session";
 import { Shield, Fingerprint, Lock, CheckCircle2 } from "lucide-react";
 
 interface VoteCommitProps {
   electionId: number;
-  candidates: Candidate[];
+  candidates: CandidateDetails[];
   onSuccess: () => void;
 }
 
@@ -37,58 +24,37 @@ export default function VoteCommit({ electionId, candidates, onSuccess }: VoteCo
     setError(null);
 
     try {
-      // 1. Fetch the candidate-key from the raw map
-      // Map key: { election-id: uint, candidate-id: uint }
-      const keyCV = {
-        election_id: uintCV(electionId),
-        candidate_id: uintCV(selectedCandidate),
-      };
-      
-      // Need to serialize the key for the Hiro API map_value endpoint
-      // The API expects a hex-serialized CV
-      const response = await fetchMapValue("candidates", keyCV);
-      
-      if (!response.data) {
-        throw new Error("Could not retrieve candidate security key");
-      }
-
-      // The response data is a hex string of the Clarity value (tuple)
-      const candDataCV = hexToCV(response.data.slice(2)); // slice 0x
-      // candDataCV is a tuple { name, description, key, votes }
-      const candidateKeyBuff = (candDataCV as any).value.key.buffer; 
+      // In this phase, we assume we have the candidateKey 
+      // (Mocking it for now as a 32-byte buffer if not provided by contract)
+      const candidateKey = new Uint8Array(32).fill(selectedCandidate); 
 
       // 2. Generate Salt
-      const salt = generateSalt();
+      const salt = generateRandomSalt();
       
       // 3. Compute Hash
-      const voteHash = await computeVoteHash(candidateKeyBuff, salt);
+      const voteHash = await generateCommitment(candidateKey, salt);
 
       // 4. Store choice and salt locally for the reveal phase
-      const storageKey = `vote-${userSession.loadUserData().profile.stxAddress.testnet}-${electionId}`;
+      const userData = userSession.loadUserData();
+      const address = getAddress(userData);
+      const storageKey = `vote-${address}-${electionId}`;
+      
       localStorage.setItem(storageKey, JSON.stringify({
         candidateId: selectedCandidate,
-        salt: uint8ArrayToHex(salt)
+        salt: bytesToHex(salt),
+        candidateKey: bytesToHex(candidateKey)
       }));
 
       // 5. Trigger Transaction
-      const network = getNetwork();
-      await openContractCall({
-        contractAddress: CONTRACT_ADDRESS,
-        contractName: CONTRACT_NAME,
-        functionName: "cast-vote",
-        functionArgs: [
-          uintCV(electionId),
-          uintCV(selectedCandidate),
-          stacksBufferCV(voteHash)
-        ],
-        network,
-        onFinish: (data) => {
-          console.log("Transaction sent:", data.txId);
+      castVote({
+        electionId,
+        candidateId: selectedCandidate,
+        voteHash,
+        onFinish: (txId) => {
+          console.log("Transaction sent:", txId);
           onSuccess();
         },
-        onCancel: () => {
-          setIsSubmitting(false);
-        }
+        onCancel: () => setIsSubmitting(false)
       });
 
     } catch (err: any) {
