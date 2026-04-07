@@ -1,0 +1,41 @@
+@import "tailwindcss";
+
+@theme {
+  --color-background: #0A0C0F;
+  --color-foreground: #E8E6E1;
+  --color-accent: #D4A017;
+  --color-border: #1E2330;
+  
+  --font-serif: "DM Serif Display", serif;
+  --font-mono: "IBM Plex Mono", monospace;
+}
+
+:root {
+  --background: #0A0C0F;
+  --foreground: #E8E6E1;
+  --accent: #D4A017;
+  --border: #1E2330;
+}
+
+body {
+  background-color: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-mono);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+h1, h2, h3, h4, h5, h6 {
+  font-family: var(--font-serif);
+}
+
+.glass {
+  background: rgba(30, 35, 48, 0.4);
+  backdrop-filter: blur(8px);
+  border: 1px solid var(--border);
+}
+
+.accent-glow {
+  box-shadow: 0 0 20px rgba(212, 160, 23, 0.15);
+}
+
