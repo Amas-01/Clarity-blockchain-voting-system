@@ -1,0 +1,24 @@
+src/app/admin/page.tsx(13,8): error TS2307: Cannot find module '@/lib/stacks' or its corresponding type declarations.
+src/app/admin/page.tsx(20,47): error TS2307: Cannot find module '@/lib/crypto-utils' or its corresponding type declarations.
+src/app/election/[id]/page.tsx(12,8): error TS2307: Cannot find module '@/lib/stacks' or its corresponding type declarations.
+src/app/election/[id]/page.tsx(141,47): error TS2552: Cannot find name 'Unlock'. Did you mean 'Lock'?
+src/app/election/[id]/page.tsx(149,67): error TS2686: 'React' refers to a UMD global, but the current file is a module. Consider adding an import instead.
+src/components/Header.tsx(5,67): error TS2307: Cannot find module '@/lib/stacks' or its corresponding type declarations.
+src/components/VoteCommit.tsx(5,64): error TS2307: Cannot find module '@/lib/crypto-utils' or its corresponding type declarations.
+src/components/VoteCommit.tsx(13,8): error TS2307: Cannot find module '@/lib/stacks' or its corresponding type declarations.
+src/components/VoteReveal.tsx(4,33): error TS2307: Cannot find module '@/lib/crypto-utils' or its corresponding type declarations.
+src/components/VoteReveal.tsx(11,8): error TS2307: Cannot find module '@/lib/stacks' or its corresponding type declarations.
+src/components/ui/create-election.tsx(15,8): error TS2307: Cannot find module '@/lib/stacks' or its corresponding type declarations.
+src/components/ui/election-list.tsx(5,61): error TS2307: Cannot find module '@/lib/stacks' or its corresponding type declarations.
+src/components/ui/navbar.tsx(3,67): error TS2307: Cannot find module '@/lib/stacks' or its corresponding type declarations.
+src/hooks/use-admin.ts(16,8): error TS2307: Cannot find module '@/lib/stacks' or its corresponding type declarations.
+src/hooks/use-election.ts(18,8): error TS2307: Cannot find module '@/lib/stacks' or its corresponding type declarations.
+src/hooks/use-elections.ts(15,8): error TS2307: Cannot find module '@/lib/stacks' or its corresponding type declarations.
+src/lib/commitment.ts(11,67): error TS2345: Argument of type 'Uint8Array<ArrayBufferLike>' is not assignable to parameter of type 'BufferSource'.
+  Type 'Uint8Array<ArrayBufferLike>' is not assignable to type 'ArrayBufferView<ArrayBuffer>'.
+    Types of property 'buffer' are incompatible.
+      Type 'ArrayBufferLike' is not assignable to type 'ArrayBuffer'.
+        Type 'SharedArrayBuffer' is missing the following properties from type 'ArrayBuffer': resizable, resize, detached, transfer, transferToFixedLength
+src/lib/network.ts(1,10): error TS2724: '"@stacks/network"' has no exported member named 'StacksMainnet'. Did you mean 'STACKS_MAINNET'?
+src/lib/network.ts(1,25): error TS2724: '"@stacks/network"' has no exported member named 'StacksTestnet'. Did you mean 'STACKS_TESTNET'?
+src/lib/stacks-read.ts(2,3): error TS2724: '"@stacks/transactions"' has no exported member named 'callReadOnlyFunction'. Did you mean 'fetchCallReadOnlyFunction'?
