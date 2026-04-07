@@ -5,7 +5,7 @@ import {
   getAllActiveElections,
   getElectionDetails
 } from "@/lib/stacks-read";
-import { Election, Phase } from "./use-election";
+import { Election, Phase } from "./useElection";
 
 export function useElections() {
   const [elections, setElections] = useState<Election[]>([]);
