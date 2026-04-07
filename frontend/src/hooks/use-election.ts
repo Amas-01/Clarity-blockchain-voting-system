@@ -5,17 +5,14 @@ import {
   fetchCallReadOnlyFunction, 
   uintCV, 
   principalCV,
-  cvToJSON,
-  ClarityValue
+  cvToJSON
 } from "@stacks/transactions";
+import { getNetwork } from "@/lib/network";
 import { 
-  getNetwork, 
-  getNetworkName,
-  getAddress,
   CONTRACT_ADDRESS, 
-  CONTRACT_NAME,
-  userSession
-} from "@/lib/stacks";
+  CONTRACT_NAME
+} from "@/lib/constants";
+import { userSession, getAddress } from "@/lib/stacks-session";
 
 export type Phase = 0 | 1 | 2 | 3;
 

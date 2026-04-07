@@ -2,17 +2,9 @@
 
 import { useEffect, useState, useCallback } from "react";
 import { 
-  fetchCallReadOnlyFunction, 
-  cvToJSON,
-  uintCV
-} from "@stacks/transactions";
-import { 
-  getNetwork, 
-  CONTRACT_ADDRESS, 
-  CONTRACT_NAME,
-  userSession,
-  getAddress
-} from "@/lib/stacks";
+  getAllActiveElections,
+  getElectionDetails
+} from "@/lib/stacks-read";
 import { Election, Phase } from "./use-election";
 
 export function useElections() {
@@ -22,51 +14,21 @@ export function useElections() {
   const fetchAllElections = useCallback(async () => {
     setLoading(true);
     try {
-      const network = getNetwork();
-      const userData = userSession.isUserSignedIn() ? userSession.loadUserData() : null;
-      const userPrincipal = getAddress(userData);
-
-      // Get all active election IDs
-      const result = await fetchCallReadOnlyFunction({
-        contractAddress: CONTRACT_ADDRESS,
-        contractName: CONTRACT_NAME,
-        functionName: "get-all-active-elections",
-        functionArgs: [],
-        network,
-        senderAddress: userPrincipal || CONTRACT_ADDRESS,
-      });
-
-      const idsData = cvToJSON(result).value;
-      if (!Array.isArray(idsData)) {
-          setElections([]);
-          return;
-      }
-
+      const ids = await getAllActiveElections();
       const electionList: Election[] = [];
 
-      for (const idObj of idsData) {
-        const eid = Number(idObj.value);
-        const detailsResult = await fetchCallReadOnlyFunction({
-          contractAddress: CONTRACT_ADDRESS,
-          contractName: CONTRACT_NAME,
-          functionName: "get-election-details",
-          functionArgs: [uintCV(eid)],
-          network,
-          senderAddress: userPrincipal || CONTRACT_ADDRESS,
-        });
-        
-        const detailsJSON = cvToJSON(detailsResult);
-        if (detailsJSON.value && !detailsJSON.value.error) {
-          const val = detailsJSON.value.value;
+      for (const eid of ids) {
+        const details = await getElectionDetails(eid);
+        if (details) {
           electionList.push({
             id: eid,
-            admin: val.admin.value,
-            name: val.name.value,
-            description: val.description.value,
-            phase: Number(val.phase.value) as Phase,
-            regDeadline: Number(val["reg-deadline"].value),
-            votingDeadline: Number(val["voting-deadline"].value),
-            tallyDeadline: Number(val["tally-deadline"].value),
+            admin: details.admin,
+            name: details.name,
+            description: details.description,
+            phase: details.phase as Phase,
+            regDeadline: details.regDeadline,
+            votingDeadline: details.votingDeadline,
+            tallyDeadline: details.tallyDeadline
           });
         }
       }
