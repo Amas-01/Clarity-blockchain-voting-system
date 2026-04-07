@@ -4,22 +4,20 @@ import "./globals.css";
 
 const serif = DM_Serif_Display({
   subsets: ["latin"],
-  weight: ["400"],
+  weight: "400",
   variable: "--font-serif",
 });
 
 const mono = IBM_Plex_Mono({
   subsets: ["latin"],
-  weight: ["400", "500", "600"],
+  weight: ["300", "400", "600", "700"],
   variable: "--font-mono",
 });
 
 export const metadata: Metadata = {
-  title: "VOTE | Secure Blockhain Election System",
-  description: "A Clarity 3 commit-reveal election system on Stacks blockchain.",
+  title: "VOTECHAIN | Secure Stacks Voting",
+  description: "A decentralized, commit-reveal voting system built on the Stacks blockchain using Clarity smart contracts.",
 };
-
-import Header from "@/components/Header";
 
 export default function RootLayout({
   children,
@@ -28,11 +26,8 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body className={`${serif.variable} ${mono.variable} antialiased min-h-screen flex flex-col`}>
-        <Header />
-        <main className="flex-1">
-          {children}
-        </main>
+      <body className={`${serif.variable} ${mono.variable} font-mono antialiased bg-[#0A0C0F] text-[#E5E7EB]`}>
+        {children}
       </body>
     </html>
   );

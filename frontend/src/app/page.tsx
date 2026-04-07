@@ -1,71 +1,67 @@
 "use client";
 
 import { useElections } from "@/hooks/use-elections";
-import ElectionCard from "@/components/Header"; // Wait, I imported Header by mistake? No, ElectionCard is missing in my thought probably.
-// Checking imports.
-import ElectionCardComponent from "@/components/ElectionCard";
-import { Vote, ShieldCheck, Database } from "lucide-react";
+import ElectionCard from "@/components/ElectionCard";
+import PageShell from "@/components/PageShell";
+import { Vote, ShieldCheck, Database, LayoutGrid } from "lucide-react";
 
+/**
+ * Dashboard assembly for all active elections.
+ */
 export default function Home() {
   const { elections, loading } = useElections();
 
   return (
-    <div className="container mx-auto px-4 py-12">
-      <section className="mb-16 border-l-4 border-accent pl-8 py-4 bg-accent/5">
-        <h1 className="text-5xl font-serif mb-4 tracking-tighter uppercase">
-          Digital_Civic_Foundation
-        </h1>
-        <p className="text-xl text-muted-foreground font-mono max-w-2xl leading-relaxed">
-          The official repository for secure, commit-reveal elections on the Stacks blockchain. 
-          Encrypted ballots. Verified outcomes. Distributed trust.
-        </p>
-        
-        <div className="flex flex-wrap gap-8 mt-12">
-          <div className="flex items-center gap-3">
-            <ShieldCheck size={20} className="text-accent" />
-            <span className="text-[10px] font-mono uppercase tracking-widest font-bold">Encrypted_Ballots</span>
-          </div>
-          <div className="flex items-center gap-3">
-            <Database size={20} className="text-accent" />
-            <span className="text-[10px] font-mono uppercase tracking-widest font-bold">Clarity_Verified</span>
-          </div>
-        </div>
-      </section>
-
-      <section>
-        <div className="flex items-baseline justify-between mb-8 border-b border-border pb-4">
-          <h2 className="text-2xl font-serif uppercase tracking-tight">Active_Elections</h2>
-          <span className="text-xs font-mono text-muted-foreground">COUNT: {elections.length}</span>
-        </div>
-
+    <PageShell 
+      title="Elections Dashboard"
+      subtitle="View and participate in ongoing secure ballot initiatives on the Stacks blockchain."
+    >
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
         {loading ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {[1, 2, 3].map((i) => (
-              <div key={i} className="h-64 border border-border bg-border/20 animate-pulse" />
-            ))}
-          </div>
+          // Skeleton Grids
+          Array.from({ length: 3 }).map((_, i) => (
+            <div key={i} className="h-64 border border-border bg-surface/20 animate-pulse" />
+          ))
         ) : elections.length > 0 ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {elections.map((election) => (
-              <ElectionCardComponent key={election.id} election={election} />
-            ))}
-          </div>
+          elections.map((election) => (
+            <ElectionCard 
+              key={election.id} 
+              id={election.id}
+              name={election.name}
+              description={election.description}
+              phase={election.phase}
+            />
+          ))
         ) : (
-          <div className="text-center py-24 border border-dashed border-border rounded-lg">
-            <p className="font-mono text-muted-foreground uppercase tracking-widest">No_Active_Elections_Found</p>
+          <div className="col-span-full py-24 border border-dashed border-border flex flex-col items-center justify-center opacity-40">
+             <LayoutGrid size={48} className="mb-4" />
+             <p className="font-mono text-sm uppercase tracking-widest text-center">
+               No_Active_Elections_Found // SYNC_COMPLETED
+             </p>
           </div>
         )}
-      </section>
+      </div>
 
-      <footer className="mt-24 pt-12 border-t border-border flex flex-col md:flex-row justify-between items-center gap-8 opacity-50 grayscale hover:grayscale-0 transition-all duration-700">
-         <div className="flex items-center gap-2">
-            <div className="w-5 h-5 bg-foreground rounded-[1px]" />
-            <span className="font-serif text-sm">STX_VOTING_PROTOCOL</span>
+      <section className="mt-24 grid grid-cols-1 md:grid-cols-3 gap-12 pt-12 border-t border-border">
+         <div className="space-y-3">
+            <h4 className="font-serif text-lg uppercase tracking-tight text-accent">Distributed_Trust</h4>
+            <p className="font-mono text-xs text-muted-foreground leading-relaxed">
+              Every vote is a cryptographically hashed commitment secured by the Clarity smart contract language.
+            </p>
          </div>
-         <p className="text-[10px] font-mono tracking-widest uppercase">
-            Built on Stacks // Clarity 3 Ready // ©2026
-         </p>
-      </footer>
-    </div>
+         <div className="space-y-3">
+            <h4 className="font-serif text-lg uppercase tracking-tight text-accent">Commit-Reveal_Protocol</h4>
+            <p className="font-mono text-xs text-muted-foreground leading-relaxed">
+              Your ballot remains secret until the reveal phase. Only you possess the cryptographic salt needed to count your vote.
+            </p>
+         </div>
+         <div className="space-y-3">
+            <h4 className="font-serif text-lg uppercase tracking-tight text-accent">Verified_Outcomes</h4>
+            <p className="font-mono text-xs text-muted-foreground leading-relaxed">
+              Once the reveal window closes, results are tallied automatically on-chain, ensuring absolute transparency.
+            </p>
+         </div>
+      </section>
+    </PageShell>
   );
 }
