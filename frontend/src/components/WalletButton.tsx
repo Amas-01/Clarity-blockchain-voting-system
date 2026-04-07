@@ -1,6 +1,6 @@
 "use client";
 
-import { useWallet } from "@/hooks/use-wallet";
+import { useWallet } from "@/hooks/useWallet";
 import { truncateAddress } from "@/lib/format";
 
 /**

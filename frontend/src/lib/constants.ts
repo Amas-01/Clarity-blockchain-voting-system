@@ -13,23 +13,23 @@ export const PHASE_COMPLETED = 3;
  * Error code map: Clarity uint → human-readable string
  */
 export const CONTRACT_ERRORS: Record<number, string> = {
-  1001: "Admin already has an active election",
-  1002: "Election not found",
-  1003: "Not the election admin",
-  1004: "Action not allowed in current phase",
-  1005: "Voter registration is closed",
-  1006: "Already registered for this election",
-  1007: "Not registered for this election",
-  1008: "Already cast a vote in this election",
-  1009: "Candidate not found",
-  1010: "Voting phase is not open",
-  1011: "Tally phase is not open",
-  1012: "Required deadline block not yet reached",
-  1013: "Vote already revealed",
-  1014: "Election already completed",
-  1015: "Candidate name already exists",
-  1016: "No winner determined yet",
-  1017: "Hash mismatch — salt or candidate incorrect",
+  1001: "Admin already has an active election session",
+  1002: "Referenced election session was not found",
+  1003: "Access denied: caller is not the authorized admin",
+  1004: "Invalid protocol phase for the requested operation",
+  1005: "Voter registration for this session is closed",
+  1006: "Identity duplicate: voter is already registered",
+  1007: "Voter identity not found in registration ledger",
+  1008: "Duplicate vote commitment: ballot already cast",
+  1009: "Referenced candidate identity not found",
+  1010: "Voting phase is currently locked",
+  1011: "Tally/reveal phase is currently locked",
+  1012: "Required network block height not yet reached",
+  1013: "Ballot commitment has already been revealed",
+  1014: "Election session is finalized and completed",
+  1015: "Duplicate identity: candidate name already exists",
+  1016: "Outcome pending: no winner determined yet",
+  1017: "Reveal failure: hash mismatch detected",
 };
 
 /**
@@ -37,17 +37,17 @@ export const CONTRACT_ERRORS: Record<number, string> = {
  */
 export const PHASE_LABELS: Record<number, string> = {
   0: "Registration",
-  1: "Voting",
-  2: "Tally",
-  3: "Completed",
+  1: "Voting_Commit",
+  2: "Tally_Reveal",
+  3: "Finalized",
 };
 
 /**
  * Descriptive text for each election phase
  */
 export const PHASE_DESCRIPTIONS: Record<number, string> = {
-  0: "Candidates are being added and voters are registering.",
-  1: "Registered voters are casting encrypted commitments.",
-  2: "Voters are revealing their votes for tallying.",
-  3: "This election has been finalized.",
+  0: "Authored admins provision candidates. Authorized voters verify identity.",
+  1: "Registered identities cast cryptographically salted commitments.",
+  2: "Participants provide secrets to unlock and count individual ballots.",
+  3: "Ballot results finalized on-chain. Immutable ledger archive.",
 };

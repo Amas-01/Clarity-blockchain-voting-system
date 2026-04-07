@@ -1,6 +1,6 @@
 "use client";
 
-import { useCurrentBlockHeight } from "@/hooks/use-current-block-height";
+import { useCurrentBlockHeight } from "@/hooks/useCurrentBlockHeight";
 import { blockHeightToEstimate } from "@/lib/format";
 
 interface BlockHeightInfoProps {

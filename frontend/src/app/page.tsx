@@ -1,6 +1,6 @@
 "use client";
 
-import { useElections } from "@/hooks/use-elections";
+import { useElections } from "@/hooks/useElections";
 import ElectionCard from "@/components/ElectionCard";
 import PageShell from "@/components/PageShell";
 import { Vote, ShieldCheck, Database, LayoutGrid } from "lucide-react";

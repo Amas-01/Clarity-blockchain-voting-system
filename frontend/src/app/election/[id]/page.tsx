@@ -1,8 +1,9 @@
 "use client";
 
 import { useParams } from "next/navigation";
-import { useElection } from "@/hooks/use-election";
+import { useElection } from "@/hooks/useElection";
 import { registerVoter, castVote, revealVote } from "@/lib/stacks-write";
+import { getCandidateKey } from "@/lib/stacks-read";
 import { generateRandomSalt, generateCommitment, bytesToHex, hexToBytes } from "@/lib/commitment";
 import { userSession, getAddress } from "@/lib/stacks-session";
 import { useState, useEffect } from "react";
@@ -46,24 +47,33 @@ export default function ElectionDetailPage() {
   const handleCommit = async () => {
     if (selectedCandidate === null) return;
     setTxStatus("pending");
+    setErrorMessage(undefined);
     
     try {
-      // 1. Generate salt and commitment
-      const candidateKey = new Uint8Array(32).fill(selectedCandidate);
+      // 1. Fetch the on-chain candidate key (buff 32)
+      // This is required for the sha256(candidate-key ++ salt) scheme
+      const candidateKey = await getCandidateKey(electionId, selectedCandidate);
+      
+      if (!candidateKey) {
+        throw new Error("CANDIDATE_KEY_NOT_FOUND_ON_CHAIN");
+      }
+
+      // 2. Generate random 32-byte salt and compute commitment
       const salt = generateRandomSalt();
       const voteHash = await generateCommitment(candidateKey, salt);
       
       const saltHex = bytesToHex(salt);
       const hashHex = bytesToHex(voteHash);
 
-      // 2. Persist locally for reveal phase
-      const address = getAddress(userSession.loadUserData());
+      // 3. Persist locally for reveal phase (scoped by address and election)
+      const userData = userSession.loadUserData();
+      const address = getAddress(userData);
       localStorage.setItem(`vote-${address}-${electionId}`, JSON.stringify({
         candidateId: selectedCandidate,
         salt: saltHex
       }));
 
-      // 3. Trigger Transaction
+      // 4. Trigger Transaction
       castVote({
         electionId,
         candidateId: selectedCandidate,
@@ -77,7 +87,8 @@ export default function ElectionDetailPage() {
         onCancel: () => setTxStatus("idle")
       });
     } catch (e: any) {
-      setErrorMessage(e.message);
+      console.error("Commit error:", e);
+      setErrorMessage(e.message || "TRANSACTION_PREPARATION_FAILED");
       setTxStatus("error");
     }
   };

@@ -3,8 +3,12 @@ import {
   cvToValue, 
   uintCV, 
   principalCV, 
+  tupleCV,
+  serializeCV,
+  deserializeCV, 
   ClarityValue 
 } from "@stacks/transactions";
+import { bytesToHex, hexToBytes } from "./commitment";
 import { getNetwork } from "./network";
 import { CONTRACT_ADDRESS, CONTRACT_NAME } from "./constants";
 
@@ -92,9 +96,15 @@ export async function getElectionByAdmin(adminAddress: string): Promise<number |
   try {
     const result = await readOnly("get-election-by-admin", [principalCV(adminAddress)]);
     const val = cvToValue(result);
-    if (!val || val.type === 'response-error') return null;
-    return Number(val.value.value);
+    // (ok none) from map-get? returns a ResponseOk with null/undefined value
+    if (!val || val.type === 'response-error' || val.value === null || val.value === undefined) {
+      return null;
+    }
+    // Access the inner value of the Optional
+    const inner = val.value;
+    return inner.value !== undefined ? Number(inner.value) : Number(inner);
   } catch (e) {
+    console.error("getElectionByAdmin failed:", e);
     return null;
   }
 }
@@ -189,3 +199,60 @@ export async function hasVoted(electionId: number, voterAddress: string): Promis
     return false;
   }
 }
+
+/**
+ * Directly fetches the 'key' (buff 32) from the candidates map for a given candidate.
+ * Required because get-candidate read-only function excludes the secret key.
+ */
+export async function getCandidateKey(electionId: number, candidateId: number): Promise<Uint8Array | null> {
+  try {
+    const network = getNetwork();
+    
+    // Construct the map name and contract details
+    const baseUrl = (network as any).coreApiUrl || (network as any).baseUrl || "https://api.testnet.hiro.so";
+    const url = `${baseUrl}/v2/map_value/${CONTRACT_ADDRESS}/${CONTRACT_NAME}/candidates`;
+    
+    // Construct the map key CV: { election-id: uint, candidate-id: uint }
+    const keyCV = tupleCV({
+      "election-id": uintCV(electionId),
+      "candidate-id": uintCV(candidateId)
+    });
+    
+    const serialized = serializeCV(keyCV);
+    const serializedHex = typeof serialized === "string" ? serialized : bytesToHex(serialized);
+    
+    const response = await fetch(url, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(serializedHex)
+    });
+
+    if (!response.ok) return null;
+    const data = await response.json();
+    
+    if (!data.data || data.data === "0x") return null;
+    
+    // Strip 0x if present
+    const hex = data.data.startsWith("0x") ? data.data.slice(2) : data.data;
+    
+    // Deserialize the map value (which is a tuple)
+    const valueCV = deserializeCV(hexToBytes(hex));
+    const value = cvToValue(valueCV);
+    
+    if (value && value.value && value.value.key) {
+      // value.value.key is already a Uint8Array if cvToValue handles BufferCV correctly
+      // actually, cvToValue for BufferCV often returns hex string or Uint8Array depending on version.
+      // Let's ensure it's a Uint8Array.
+      const keyVal = value.value.key.value;
+      if (keyVal instanceof Uint8Array) return keyVal;
+      // fallback for older/different versions of @stacks/transactions
+      return typeof keyVal === 'string' ? new TextEncoder().encode(keyVal) : keyVal;
+    }
+    
+    return null;
+  } catch (e) {
+    console.error("getCandidateKey error:", e);
+    return null;
+  }
+}
+

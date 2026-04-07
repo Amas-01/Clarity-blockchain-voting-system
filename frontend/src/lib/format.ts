@@ -24,11 +24,11 @@ export function truncateHash(hex: string, chars = 8): string {
  */
 export function phaseColor(phase: number): string {
   switch (phase) {
-    case 0: return "text-blue-400";
-    case 1: return "text-amber-400";
-    case 2: return "text-orange-400";
-    case 3: return "text-green-400";
-    default: return "text-muted";
+    case 0: return "text-border";
+    case 1: return "text-accent font-bold";
+    case 2: return "text-[#D4A017]";
+    case 3: return "text-green-500 opacity-80";
+    default: return "text-muted-foreground";
   }
 }
 
@@ -37,11 +37,11 @@ export function phaseColor(phase: number): string {
  */
 export function phaseBadgeStyle(phase: number): string {
   switch (phase) {
-    case 0: return "bg-blue-900/40 text-blue-300 border border-blue-700";
-    case 1: return "bg-amber-900/40 text-amber-300 border border-amber-700";
-    case 2: return "bg-orange-900/40 text-orange-300 border border-orange-700";
-    case 3: return "bg-green-900/40 text-green-300 border border-green-700";
-    default: return "bg-gray-900/40 text-gray-300 border border-gray-700";
+    case 0: return "bg-zinc-900 text-zinc-400 border border-zinc-800";
+    case 1: return "bg-[#D4A017]/10 text-[#D4A017] border border-[#D4A017]/40 shadow-[0_0_10px_rgba(212,160,23,0.1)]";
+    case 2: return "bg-[#D4A017]/20 text-[#D4A017] border border-[#D4A017] animate-pulse";
+    case 3: return "bg-green-950/30 text-green-500/80 border border-green-900/50";
+    default: return "bg-zinc-900 text-zinc-500 border border-zinc-800";
   }
 }
 
