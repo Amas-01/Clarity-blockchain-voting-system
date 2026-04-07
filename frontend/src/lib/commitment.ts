@@ -8,7 +8,8 @@
  * Computes SHA-256 hash of provided bytes.
  */
 export async function sha256Bytes(data: Uint8Array): Promise<Uint8Array> {
-  const hashBuffer = await window.crypto.subtle.digest("SHA-256", data);
+  // subtle.digest expects BufferSource (ArrayBuffer or TypedArray)
+  const hashBuffer = await window.crypto.subtle.digest("SHA-256", data as any);
   return new Uint8Array(hashBuffer);
 }
 
