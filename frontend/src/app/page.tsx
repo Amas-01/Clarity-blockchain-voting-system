@@ -45,9 +45,6 @@ function ElectionCardWrapper({ id }: { id: number }) {
     <motion.div
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
-      whileHover={{ y: -4 }}
-      className="cursor-pointer"
-      onClick={() => router.push(`/election/${id}`)}
     >
       <ElectionCard 
         id={election.id}

@@ -14,6 +14,7 @@ import {
   parseContractError
 } from "@/lib/stacks-write";
 import { sha256String, bytesToHex } from "@/lib/commitment";
+import { PHASE_LABELS } from "@/lib/constants";
 
 // Components
 import Navbar from "@/components/Navbar";
