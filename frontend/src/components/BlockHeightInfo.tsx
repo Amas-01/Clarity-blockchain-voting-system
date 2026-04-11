@@ -6,13 +6,15 @@ import { blockHeightToEstimate } from "@/lib/format";
 interface BlockHeightInfoProps {
   label: string;
   targetBlock: number;
+  currentBlock?: number | null;
 }
 
 /**
  * Display for target block height with time estimation.
  */
-export default function BlockHeightInfo({ label, targetBlock }: BlockHeightInfoProps) {
-  const { height, loading } = useCurrentBlockHeight();
+export default function BlockHeightInfo({ label, targetBlock, currentBlock }: BlockHeightInfoProps) {
+  const { height: hookHeight, loading } = useCurrentBlockHeight();
+  const height = currentBlock ?? hookHeight;
 
   return (
     <div className="flex items-center gap-2 font-mono text-xs py-1 transition-all duration-500">

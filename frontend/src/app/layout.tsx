@@ -19,16 +19,20 @@ export const metadata: Metadata = {
   description: "A decentralized, commit-reveal voting system built on the Stacks blockchain using Clarity smart contracts.",
 };
 
+import { WalletProvider } from "@/hooks/useWallet";
+
 export default function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
-      <body className={`${serif.variable} ${mono.variable} font-mono antialiased bg-[#0A0C0F] text-[#E5E7EB]`}>
-        {children}
-      </body>
+    <html lang="en" className={`${serif.variable} ${mono.variable}`}>
+       <body className="font-mono antialiased bg-background text-foreground selection:bg-accent selection:text-background">
+         <WalletProvider>
+           {children}
+         </WalletProvider>
+       </body>
     </html>
   );
 }

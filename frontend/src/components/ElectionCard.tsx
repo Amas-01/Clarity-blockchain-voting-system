@@ -3,51 +3,61 @@
 import PhaseBadge from "./PhaseBadge";
 import { PHASE_DESCRIPTIONS } from "@/lib/constants";
 import { phaseBadgeStyle } from "@/lib/format";
+import { motion } from "framer-motion";
+import { ChevronRight, Database, Shield } from "lucide-react";
+import Link from "next/link";
 
 interface ElectionCardProps {
   id: number;
   name: string;
   description: string;
   phase: number;
-  onClick?: () => void;
 }
 
 /**
- * Election summary card with dark civic design.
+ * Election summary card with dark civic design and premium animations.
  */
-export default function ElectionCard({ id, name, description, phase, onClick }: ElectionCardProps) {
-  // Extract border color from the badge style (the text-XXX part usually matches the border)
-  const styling = phaseBadgeStyle(phase);
-  const borderClass = styling.split(" ").find(c => c.startsWith("text-")) || "text-amber-400";
-  const bgBorderClass = borderClass.replace("text-", "bg-");
-
+export default function ElectionCard({ id, name, description, phase }: ElectionCardProps) {
   return (
-    <div
-      onClick={onClick}
-      className={`relative group border border-border bg-surface p-6 transition-all duration-500 overflow-hidden ${
-        onClick ? "cursor-pointer hover:shadow-[0_8px_32px_rgba(212,160,23,0.1)] hover:-translate-y-1" : ""
-      }`}
-    >
-      {/* Phase-colored Accent Strip */}
-      <div className={`absolute left-0 top-0 bottom-0 w-1 ${bgBorderClass}`} />
-      
-      <div className="flex justify-between items-start mb-6">
-        <h3 className="font-serif text-2xl uppercase tracking-tight group-hover:text-accent transition-colors leading-none">
-          {name}
-        </h3>
-        <PhaseBadge phase={phase} />
-      </div>
+    <Link href={`/election/${id}`}>
+      <motion.div
+        whileHover={{ y: -5 }}
+        className="group relative border border-border bg-surface p-8 transition-premium glass overflow-hidden flex flex-col h-full min-h-[300px]"
+      >
+        {/* Decorative corner accent */}
+        <div className="absolute top-0 right-0 w-24 h-24 bg-accent/5 blur-[50px] -mr-12 -mt-12 group-hover:bg-accent/10 transition-premium" />
+        
+        <div className="flex justify-between items-start mb-6 relative z-10">
+           <div className="p-2 border border-border bg-background group-hover:border-accent/40 transition-premium">
+              <Shield size={16} className="text-muted-foreground group-hover:text-accent transition-premium" />
+           </div>
+           <PhaseBadge phase={phase} />
+        </div>
 
-      <p className="font-mono text-sm text-muted-foreground mb-12 line-clamp-2 leading-relaxed">
-        {description}
-      </p>
+        <div className="space-y-4 flex-grow relative z-10">
+          <h3 className="font-serif text-3xl uppercase tracking-tighter group-hover:text-accent transition-premium leading-tight text-balance">
+            {name}
+          </h3>
+          <p className="font-mono text-xs text-muted-foreground line-clamp-3 leading-relaxed opacity-80 group-hover:opacity-100 transition-premium">
+            {description}
+          </p>
+        </div>
 
-      <div className="flex justify-between items-end">
-        <span className="font-mono text-[10px] text-muted-foreground uppercase opacity-60">
-          Election #0{id}
-        </span>
-        <div className="w-8 h-[1px] bg-border group-hover:w-16 group-hover:bg-accent transition-all duration-700" />
-      </div>
-    </div>
+        <div className="mt-auto pt-10 flex items-end justify-between relative z-10">
+           <div className="space-y-1">
+              <span className="block font-mono text-[9px] text-muted-foreground uppercase tracking-[0.2em] opacity-40">Identity_Reference</span>
+              <span className="block font-mono text-[10px] text-foreground font-bold">NODE_0{id} // ADDR_0x...{id}</span>
+           </div>
+           
+           <div className="flex items-center gap-2 font-mono text-[10px] uppercase tracking-widest text-accent opacity-0 group-hover:opacity-100 translate-x-4 group-hover:translate-x-0 transition-premium">
+              <span>View_Ballot</span>
+              <ChevronRight size={14} />
+           </div>
+        </div>
+
+        {/* Bottom border progress accent */}
+        <div className="absolute bottom-0 left-0 h-[2px] bg-accent/20 w-0 group-hover:w-full transition-all duration-700 ease-out" />
+      </motion.div>
+    </Link>
   );
 }

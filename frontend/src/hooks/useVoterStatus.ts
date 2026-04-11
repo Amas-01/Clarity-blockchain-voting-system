@@ -20,6 +20,11 @@ export function useVoterStatus(electionId: number) {
       return;
     }
 
+    if (electionId === undefined || isNaN(electionId)) {
+      setLoading(false);
+      return;
+    }
+
     setLoading(true);
     try {
       const userData = userSession.loadUserData();

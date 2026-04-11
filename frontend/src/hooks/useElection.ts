@@ -2,16 +2,12 @@
 
 import { useEffect, useState, useCallback } from "react";
 import { 
-  fetchCallReadOnlyFunction, 
-  uintCV, 
-  principalCV,
-  cvToJSON
-} from "@stacks/transactions";
-import { getNetwork } from "@/lib/network";
-import { 
-  CONTRACT_ADDRESS, 
-  CONTRACT_NAME
-} from "@/lib/constants";
+  getElectionDetails,
+  getAllCandidates,
+  getCandidate,
+  isRegistered as checkRegistration,
+  hasVoted as checkVoted
+} from "@/lib/stacks-read";
 import { userSession, getAddress } from "@/lib/stacks-session";
 
 export type Phase = 0 | 1 | 2 | 3;
@@ -34,6 +30,9 @@ export interface Candidate {
   votes: number;
 }
 
+/**
+ * Standard hook to fetch full election details and candidate data for a specific entry.
+ */
 export function useElection(electionId?: number) {
   const [election, setElection] = useState<Election | null>(null);
   const [candidates, setCandidates] = useState<Candidate[]>([]);
@@ -42,94 +41,56 @@ export function useElection(electionId?: number) {
   const [loading, setLoading] = useState(true);
 
   const fetchElection = useCallback(async () => {
-    if (!electionId) return;
+    if (electionId === undefined || isNaN(electionId)) {
+      setLoading(false);
+      return;
+    }
+
     setLoading(true);
     try {
-      const network = getNetwork();
-      const userData = userSession.loadUserData();
-      const userPrincipal = getAddress(userData);
+      const userData = userSession.isUserSignedIn() ? userSession.loadUserData() : null;
+      const userPrincipal = userData ? getAddress(userData) : null;
 
-      // Get election details
-      const detailsResult = await fetchCallReadOnlyFunction({
-        contractAddress: CONTRACT_ADDRESS,
-        contractName: CONTRACT_NAME,
-        functionName: "get-election-details",
-        functionArgs: [uintCV(electionId)],
-        network,
-        senderAddress: userPrincipal || CONTRACT_ADDRESS,
-      });
-      
-      const detailsJSON = cvToJSON(detailsResult);
-      if (detailsJSON.value && !detailsJSON.value.error) {
-        const val = detailsJSON.value.value;
+      // 1. Fetch Election Details
+      const details = await getElectionDetails(electionId);
+      if (details) {
         setElection({
           id: electionId,
-          admin: val.admin.value,
-          name: val.name.value,
-          description: val.description.value,
-          phase: Number(val.phase.value) as Phase,
-          regDeadline: Number(val["reg-deadline"].value),
-          votingDeadline: Number(val["voting-deadline"].value),
-          tallyDeadline: Number(val["tally-deadline"].value),
+          ...details,
+          phase: details.phase as Phase
         });
+      } else {
+        setElection(null);
       }
 
-      // Get candidates
-      const candidatesResult = await fetchCallReadOnlyFunction({
-        contractAddress: CONTRACT_ADDRESS,
-        contractName: CONTRACT_NAME,
-        functionName: "get-all-candidates",
-        functionArgs: [uintCV(electionId)],
-        network,
-        senderAddress: userPrincipal || CONTRACT_ADDRESS,
-      });
-
-      const candidateIds = (cvToJSON(candidatesResult).value || []) as any[];
+      // 2. Fetch Candidates
+      const candidateIds = await getAllCandidates(electionId);
       const candidateList: Candidate[] = [];
       
       for (const cid of candidateIds) {
-        const candResult = await fetchCallReadOnlyFunction({
-          contractAddress: CONTRACT_ADDRESS,
-          contractName: CONTRACT_NAME,
-          functionName: "get-candidate",
-          functionArgs: [uintCV(electionId), uintCV(cid.value)],
-          network,
-          senderAddress: userPrincipal || CONTRACT_ADDRESS,
-        });
-        const candJSON = cvToJSON(candResult).value.value;
-        candidateList.push({
-          id: Number(cid.value),
-          name: candJSON.name.value,
-          description: candJSON.description.value,
-          votes: Number(candJSON.votes.value),
-        });
+        const cand = await getCandidate(electionId, cid);
+        if (cand) {
+          candidateList.push(cand);
+        }
       }
       setCandidates(candidateList);
 
-      // User status
+      // 3. User Voter Status (Mirroring useVoterStatus for integrated view)
       if (userPrincipal) {
-        const regResult = await fetchCallReadOnlyFunction({
-          contractAddress: CONTRACT_ADDRESS,
-          contractName: CONTRACT_NAME,
-          functionName: "is-registered",
-          functionArgs: [uintCV(electionId), principalCV(userPrincipal)],
-          network,
-          senderAddress: userPrincipal,
-        });
-        setIsRegistered(cvToJSON(regResult).value);
-
-        const votedResult = await fetchCallReadOnlyFunction({
-          contractAddress: CONTRACT_ADDRESS,
-          contractName: CONTRACT_NAME,
-          functionName: "has-voted",
-          functionArgs: [uintCV(electionId), principalCV(userPrincipal)],
-          network,
-          senderAddress: userPrincipal,
-        });
-        setHasVoted(cvToJSON(votedResult).value);
+        const [reg, voted] = await Promise.all([
+          checkRegistration(electionId, userPrincipal),
+          checkVoted(electionId, userPrincipal)
+        ]);
+        setIsRegistered(reg);
+        setHasVoted(voted);
+      } else {
+        setIsRegistered(false);
+        setHasVoted(false);
       }
     } catch (e) {
-      console.error("Error fetching election:", e);
+      console.error("Error fetching election in useElection hook:", e);
+      setElection(null);
+      setCandidates([]);
     } finally {
       setLoading(false);
     }

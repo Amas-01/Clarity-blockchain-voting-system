@@ -5,9 +5,13 @@
   --color-foreground: #E8E6E1;
   --color-accent: #D4A017;
   --color-border: #1E2330;
+  --color-surface: #14171C;
+  --color-muted-foreground: #94A3B8;
   
   --font-serif: "DM Serif Display", serif;
   --font-mono: "IBM Plex Mono", monospace;
+  
+  --radius-sharp: 0px;
 }
 
 :root {
@@ -15,6 +19,8 @@
   --foreground: #E8E6E1;
   --accent: #D4A017;
   --border: #1E2330;
+  --surface: #14171C;
+  --muted-foreground: #94A3B8;
 }
 
 body {
@@ -23,19 +29,51 @@ body {
   font-family: var(--font-mono);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  line-height: 1.6;
 }
 
 h1, h2, h3, h4, h5, h6 {
   font-family: var(--font-serif);
+  font-weight: 400;
+  letter-spacing: -0.02em;
 }
 
 .glass {
-  background: rgba(30, 35, 48, 0.4);
-  backdrop-filter: blur(8px);
+  background: rgba(20, 23, 28, 0.7);
+  backdrop-filter: blur(12px);
   border: 1px solid var(--border);
 }
 
 .accent-glow {
-  box-shadow: 0 0 20px rgba(212, 160, 23, 0.15);
+  box-shadow: 0 0 30px rgba(212, 160, 23, 0.1);
+}
+
+.border-subtle {
+  border: 1px solid rgba(30, 35, 48, 0.5);
+}
+
+.transition-premium {
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.text-balance {
+  text-wrap: balance;
+}
+
+/* Custom scrollbar for civic feel */
+::-webkit-scrollbar {
+  width: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--background);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--border);
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--accent);
 }
 

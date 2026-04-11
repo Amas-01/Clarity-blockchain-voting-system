@@ -6,7 +6,8 @@ import {
   tupleCV,
   serializeCV,
   deserializeCV, 
-  ClarityValue 
+  ClarityValue,
+  cvToJSON
 } from "@stacks/transactions";
 import { bytesToHex, hexToBytes } from "./commitment";
 import { getNetwork } from "./network";
@@ -51,26 +52,66 @@ async function readOnly(
 }
 
 /**
+ * Helper to safely extract value from a JSON-ified CV.
+ * Handles Response and Optional wrappers.
+ */
+function unwrapCV(json: any): any {
+  if (!json) return null;
+  
+  // Handle Response/Optional wrappers
+  if (json.type === "response-ok" || json.type === "optional-some") {
+    return unwrapCV(json.value);
+  }
+  
+  if (json.type === "response-error" || json.type === "optional-none") {
+    return null;
+  }
+
+  // If it's a primitive with a .value, return it
+  if (json.value !== undefined && typeof json.value !== 'object') {
+    return json.value;
+  }
+
+  // If it's a tuple, unwrap its fields
+  if (json.type === "tuple" && json.value) {
+    const unwrapped: any = {};
+    for (const key in json.value) {
+      unwrapped[key] = unwrapCV(json.value[key]);
+    }
+    return unwrapped;
+  }
+
+  // If it's a list, unwrap its elements
+  if (json.type === "list" && Array.isArray(json.value)) {
+    return json.value.map((item: any) => unwrapCV(item));
+  }
+
+  return json.value ?? json;
+}
+
+/**
  * Maps the ok-tuple to ElectionDetails type.
  */
 export async function getElectionDetails(electionId: number): Promise<ElectionDetails | null> {
+  if (!Number.isInteger(electionId)) return null;
   try {
     const result = await readOnly("get-election-details", [uintCV(electionId)]);
-    const val = cvToValue(result);
-    if (!val || val.type === 'response-error' || val.value === null) return null;
+    const json = cvToJSON(result);
+    const data = unwrapCV(json);
     
-    // The contract returns (ok (tuple ...)) or (err ...)
-    const data = val.value;
+    if (!data) return null;
+    
     return {
-      admin: data.admin.value,
-      name: data.name.value,
-      description: data.description.value,
-      phase: Number(data.phase.value),
-      regDeadline: Number(data["reg-deadline"].value),
-      votingDeadline: Number(data["voting-deadline"].value),
-      tallyDeadline: Number(data["tally-deadline"].value),
+      admin: data.admin,
+      name: data.name,
+      description: data.description,
+      phase: Number(data.phase),
+      regDeadline: Number(data["reg-deadline"]),
+      votingDeadline: Number(data["voting-deadline"]),
+      tallyDeadline: Number(data["tally-deadline"]),
     };
   } catch (e) {
+    console.error("getElectionDetails error:", e);
     return null;
   }
 }
@@ -81,9 +122,8 @@ export async function getElectionDetails(electionId: number): Promise<ElectionDe
 export async function getAllActiveElections(): Promise<number[]> {
   try {
     const result = await readOnly("get-all-active-elections", []);
-    const val = cvToValue(result);
-    // Returns (list uint)
-    return (val || []).map((v: any) => Number(v.value));
+    const data = unwrapCV(cvToJSON(result));
+    return (data || []).map((v: any) => Number(v));
   } catch (e) {
     return [];
   }
@@ -95,14 +135,10 @@ export async function getAllActiveElections(): Promise<number[]> {
 export async function getElectionByAdmin(adminAddress: string): Promise<number | null> {
   try {
     const result = await readOnly("get-election-by-admin", [principalCV(adminAddress)]);
-    const val = cvToValue(result);
-    // (ok none) from map-get? returns a ResponseOk with null/undefined value
-    if (!val || val.type === 'response-error' || val.value === null || val.value === undefined) {
-      return null;
-    }
-    // Access the inner value of the Optional
-    const inner = val.value;
-    return inner.value !== undefined ? Number(inner.value) : Number(inner);
+    const data = unwrapCV(cvToJSON(result));
+    if (data === null) return null;
+    const electionId = Number(data);
+    return isNaN(electionId) ? null : electionId;
   } catch (e) {
     console.error("getElectionByAdmin failed:", e);
     return null;
@@ -113,11 +149,11 @@ export async function getElectionByAdmin(adminAddress: string): Promise<number |
  * Returns array of candidate ID numbers for the given election.
  */
 export async function getAllCandidates(electionId: number): Promise<number[]> {
+  if (!Number.isInteger(electionId)) return [];
   try {
     const result = await readOnly("get-all-candidates", [uintCV(electionId)]);
-    const val = cvToValue(result);
-    // Returns (ok (list uint))
-    return (val.value || []).map((v: any) => Number(v.value));
+    const data = unwrapCV(cvToJSON(result));
+    return (data || []).map((v: any) => Number(v));
   } catch (e) {
     return [];
   }
@@ -127,17 +163,17 @@ export async function getAllCandidates(electionId: number): Promise<number[]> {
  * Returns CandidateDetails or null if not found.
  */
 export async function getCandidate(electionId: number, candidateId: number): Promise<CandidateDetails | null> {
+  if (!Number.isInteger(electionId) || !Number.isInteger(candidateId)) return null;
   try {
     const result = await readOnly("get-candidate", [uintCV(electionId), uintCV(candidateId)]);
-    const val = cvToValue(result);
-    if (!val || val.type === 'response-error') return null;
+    const data = unwrapCV(cvToJSON(result));
+    if (!data) return null;
     
-    const data = val.value;
     return {
       id: candidateId,
-      name: data.name.value,
-      description: data.description.value,
-      votes: Number(data.votes.value),
+      name: data.name,
+      description: data.description,
+      votes: Number(data.votes),
     };
   } catch (e) {
     return null;
@@ -145,14 +181,14 @@ export async function getCandidate(electionId: number, candidateId: number): Pro
 }
 
 /**
- * Returns vote count or null on err (including E_TALLY_NOT_OPEN).
+ * Returns vote count or null on err.
  */
 export async function getCandidateVotes(electionId: number, candidateId: number): Promise<number | null> {
+  if (!Number.isInteger(electionId) || !Number.isInteger(candidateId)) return null;
   try {
     const result = await readOnly("get-candidate-votes", [uintCV(electionId), uintCV(candidateId)]);
-    const val = cvToValue(result);
-    if (!val || val.type === 'response-error') return null;
-    return Number(val.value.value);
+    const data = unwrapCV(cvToJSON(result));
+    return data !== null ? Number(data) : null;
   } catch (e) {
     return null;
   }
@@ -162,11 +198,11 @@ export async function getCandidateVotes(electionId: number, candidateId: number)
  * Returns winning candidate ID or null if no winner exists yet.
  */
 export async function getElectionWinner(electionId: number): Promise<number | null> {
+  if (!Number.isInteger(electionId)) return null;
   try {
     const result = await readOnly("get-election-winner", [uintCV(electionId)]);
-    const val = cvToValue(result);
-    if (!val || val.type === 'response-error') return null;
-    return Number(val.value.value);
+    const data = unwrapCV(cvToJSON(result));
+    return data !== null ? Number(data) : null;
   } catch (e) {
     return null;
   }
@@ -176,11 +212,10 @@ export async function getElectionWinner(electionId: number): Promise<number | nu
  * Returns true if the voter is registered for the given election.
  */
 export async function isRegistered(electionId: number, voterAddress: string): Promise<boolean> {
+  if (!Number.isInteger(electionId)) return false;
   try {
     const result = await readOnly("is-registered", [uintCV(electionId), principalCV(voterAddress)]);
-    const val = cvToValue(result);
-    // Returns bool
-    return Boolean(val);
+    return Boolean(unwrapCV(cvToJSON(result)));
   } catch (e) {
     return false;
   }
@@ -190,29 +225,25 @@ export async function isRegistered(electionId: number, voterAddress: string): Pr
  * Returns true if the voter has already cast a vote commitment.
  */
 export async function hasVoted(electionId: number, voterAddress: string): Promise<boolean> {
+  if (!Number.isInteger(electionId)) return false;
   try {
     const result = await readOnly("has-voted", [uintCV(electionId), principalCV(voterAddress)]);
-    const val = cvToValue(result);
-    // Returns bool
-    return Boolean(val);
+    return Boolean(unwrapCV(cvToJSON(result)));
   } catch (e) {
     return false;
   }
 }
 
 /**
- * Directly fetches the 'key' (buff 32) from the candidates map for a given candidate.
- * Required because get-candidate read-only function excludes the secret key.
+ * Directly fetches the 'key' (buff 32) from the candidates map.
  */
 export async function getCandidateKey(electionId: number, candidateId: number): Promise<Uint8Array | null> {
+  if (!Number.isInteger(electionId) || !Number.isInteger(candidateId)) return null;
   try {
     const network = getNetwork();
-    
-    // Construct the map name and contract details
     const baseUrl = (network as any).coreApiUrl || (network as any).baseUrl || "https://api.testnet.hiro.so";
     const url = `${baseUrl}/v2/map_value/${CONTRACT_ADDRESS}/${CONTRACT_NAME}/candidates`;
     
-    // Construct the map key CV: { election-id: uint, candidate-id: uint }
     const keyCV = tupleCV({
       "election-id": uintCV(electionId),
       "candidate-id": uintCV(candidateId)
@@ -229,24 +260,17 @@ export async function getCandidateKey(electionId: number, candidateId: number): 
 
     if (!response.ok) return null;
     const data = await response.json();
-    
     if (!data.data || data.data === "0x") return null;
     
-    // Strip 0x if present
     const hex = data.data.startsWith("0x") ? data.data.slice(2) : data.data;
-    
-    // Deserialize the map value (which is a tuple)
     const valueCV = deserializeCV(hexToBytes(hex));
-    const value = cvToValue(valueCV);
     
-    if (value && value.value && value.value.key) {
-      // value.value.key is already a Uint8Array if cvToValue handles BufferCV correctly
-      // actually, cvToValue for BufferCV often returns hex string or Uint8Array depending on version.
-      // Let's ensure it's a Uint8Array.
-      const keyVal = value.value.key.value;
-      if (keyVal instanceof Uint8Array) return keyVal;
-      // fallback for older/different versions of @stacks/transactions
-      return typeof keyVal === 'string' ? new TextEncoder().encode(keyVal) : keyVal;
+    const json = cvToJSON(valueCV);
+    const unwrapped = unwrapCV(json);
+    
+    if (unwrapped && unwrapped.key) {
+       if (typeof unwrapped.key === 'string') return hexToBytes(unwrapped.key.startsWith('0x') ? unwrapped.key.slice(2) : unwrapped.key);
+       return unwrapped.key;
     }
     
     return null;
@@ -255,4 +279,3 @@ export async function getCandidateKey(electionId: number, candidateId: number): 
     return null;
   }
 }
-

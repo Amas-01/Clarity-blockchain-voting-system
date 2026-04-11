@@ -6,7 +6,7 @@ import { ExternalLink, CheckCircle2, XCircle, Loader2 } from "lucide-react";
 interface TransactionStatusProps {
   txId: string | null;
   status: "idle" | "pending" | "success" | "error";
-  errorMessage?: string;
+  errorMessage?: string | null;
 }
 
 /**
